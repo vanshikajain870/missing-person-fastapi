@@ -105,12 +105,13 @@
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from pymongo import MongoClient
 import os
 import re
 from datetime import datetime
-from typing import Optional
 
 app = FastAPI()
 
@@ -145,12 +146,34 @@ db = client["missing_person_db"]
 found_collection = db["found_persons"]
 
 # ===========================
+# Serve Static Frontend Files
+# ===========================
+STATIC_DIR = os.path.join(os.getcwd(), "static")
+
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# ===========================
+# Home Route — serves index.html
+# ===========================
+@app.get("/", response_class=HTMLResponse)
+async def serve_index():
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if not os.path.exists(index_path):
+        return HTMLResponse(
+            content="<h2>Frontend not found. Place index.html inside the /static folder.</h2>",
+            status_code=404
+        )
+    with open(index_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+# ===========================
 # Request Body Schema
 # ===========================
 class FoundPersonRequest(BaseModel):
     found_location: str
     found_datetime: str
-    contact_name: str
+    contact_name:   str
     contact_number: str
 
 # ===========================
@@ -180,10 +203,10 @@ def found_person(data: FoundPersonRequest):
 
     # Save to MongoDB
     found_document = {
-        "found_location":  data.found_location,
-        "found_datetime":  data.found_datetime,
-        "contact_name":    data.contact_name,
-        "contact_number":  phone_number
+        "found_location": data.found_location,
+        "found_datetime": data.found_datetime,
+        "contact_name":   data.contact_name,
+        "contact_number": phone_number
     }
 
     found_collection.insert_one(found_document)
