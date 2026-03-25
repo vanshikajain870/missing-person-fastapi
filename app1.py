@@ -143,7 +143,7 @@ except Exception as e:
     print("MongoDB Connection Failed:", e)
 
 db = client["missing_person_db"]
-found_collection = db["found_persons"]
+collection = db["found_persons"]
 
 # ===========================
 # Serve Static Frontend Files
