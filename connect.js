@@ -178,7 +178,7 @@
 // });
 
 
-const BASE_URL = "http://missing-person-fastapi.onrender.com"; 
+const BASE_URL = "http://127.0.0.1:8000"; 
 // 👉 After deployment, change to your Render URL
 
 async function submitPublicLostReport() {
@@ -228,24 +228,29 @@ async function submitPublicLostReport() {
     formData.append("photo", photoInput.files[0]);
   }
 
-  // 🔥 UPDATED API URL
-  const response = await fetch(`${BASE_URL}/submit`, {
-    method: "POST",
-    body: formData
-  });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    alert(result.detail);  // 🔥 FastAPI uses "detail"
-    return;
-  }
-
-  alert(result.message);
-
-  currentUserRole = "Public";
-  showDashboard();
+  try {
+        const response = await fetch(`${BASE_URL}/submit`, {
+            method: "POST",
+            body: formData
+        });
+ 
+        const result = await response.json();
+ 
+        if (!response.ok) {
+            alert(result.detail || "Submission failed. Please try again.");
+            return;
+        }
+ 
+        alert(result.message);
+        currentUserRole = "Public";
+        showDashboard();
+ 
+    } catch (err) {
+        console.error("Submit error:", err);
+        alert("Could not connect to the server. Please try again.");
+    }
 }
+ 
 
 // ================================
 // LOAD REPORTS (FIXED ENDPOINT)
