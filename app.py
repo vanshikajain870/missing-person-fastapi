@@ -169,7 +169,8 @@
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pymongo import MongoClient
 from bson import ObjectId
 import os
@@ -192,16 +193,8 @@ app.add_middleware(
 )
 
 # ===========================
-# Home Route (only ONE)
+# MongoDB Connection
 # ===========================
-@app.get("/")
-def home():
-    return {"message": "Missing Person Backend API is running successfully!"}
-
-# ===========================
-# MongoDB Connection (FIXED)
-# ===========================
-# On Render: set environment variable MONGO_URI to your actual connection string
 MONGO_URI = os.getenv("MONGO_URI")
 
 if not MONGO_URI:
@@ -223,6 +216,25 @@ collection = db["user_login_details"]
 # ===========================
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads/photos")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# ===========================
+# Serve Static Frontend Files
+# ===========================
+STATIC_DIR = os.path.join(os.getcwd(), "static")
+
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# ===========================
+# Home Route — serves index.html
+# ===========================
+@app.get("/", response_class=HTMLResponse)
+async def serve_index():
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if not os.path.exists(index_path):
+        return HTMLResponse(content="<h2>Frontend not found. Place index.html inside the /static folder.</h2>", status_code=404)
+    with open(index_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
 
 # ===========================
 # Submit Route
@@ -258,7 +270,7 @@ async def submit(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format")
 
-    # Save photo with unique filename to avoid overwrites
+    # Save photo
     photo_path = None
     if photo and photo.filename:
         ext = os.path.splitext(photo.filename)[1]
