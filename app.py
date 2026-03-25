@@ -174,16 +174,11 @@ from pymongo import MongoClient
 from bson import ObjectId
 import os
 import re
+import uuid
 from datetime import datetime
 from typing import Optional
-from fastapi import FastAPI
-from fastapi.responses import FileResponse
 
 app = FastAPI()
-
-@app.get("/")
-def home():
-    return FileResponse("index.html")
 
 # ===========================
 # CORS
@@ -197,7 +192,7 @@ app.add_middleware(
 )
 
 # ===========================
-# Home Route
+# Home Route (only ONE)
 # ===========================
 @app.get("/")
 def home():
@@ -206,7 +201,11 @@ def home():
 # ===========================
 # MongoDB Connection (FIXED)
 # ===========================
-MONGO_URI = os.getenv("mongodb+srv://render_user:Vanshika0509@cluster0.6ds8ydm.mongodb.net/missing_person_db")  # 🔥 DO NOT hardcode
+# On Render: set environment variable MONGO_URI to your actual connection string
+MONGO_URI = os.getenv("MONGO_URI")
+
+if not MONGO_URI:
+    raise RuntimeError("MONGO_URI environment variable is not set!")
 
 client = MongoClient(MONGO_URI)
 
@@ -243,13 +242,12 @@ async def submit(
     public_familyPhone: str = Form(...),
     photo: UploadFile = File(None)
 ):
-
-    # 🔥 PHONE VALIDATION
+    # Phone validation
     phone_number = public_familyPhone.strip()
     if not re.match(r'^[6-9]\d{9}$', phone_number):
         raise HTTPException(status_code=400, detail="Invalid Indian phone number")
 
-    # 🔥 DATE VALIDATION
+    # Date validation
     if not public_dateTime:
         raise HTTPException(status_code=400, detail="Date & time required")
 
@@ -260,16 +258,17 @@ async def submit(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format")
 
-    # Save photo
+    # Save photo with unique filename to avoid overwrites
     photo_path = None
-    if photo:
-        filename = photo.filename
-        file_path = os.path.join(UPLOAD_FOLDER, filename)
+    if photo and photo.filename:
+        ext = os.path.splitext(photo.filename)[1]
+        unique_filename = f"{uuid.uuid4().hex}{ext}"
+        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
 
         with open(file_path, "wb") as f:
             f.write(await photo.read())
 
-        photo_path = file_path
+        photo_path = f"uploads/photos/{unique_filename}"
 
     # MongoDB document
     document = {
@@ -288,18 +287,19 @@ async def submit(
         "status": "Missing"
     }
 
-    # collection.insert_one(document)
     result = collection.insert_one(document)
     print("Inserted ID:", result.inserted_id)
 
     return {"message": "Report submitted successfully"}
 
 # ===========================
-# Get Photo
+# Serve uploaded photos
 # ===========================
 @app.get("/uploads/photos/{filename}")
 def get_photo(filename: str):
     file_path = os.path.join(UPLOAD_FOLDER, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Photo not found")
     return FileResponse(file_path)
 
 # ===========================
@@ -308,10 +308,8 @@ def get_photo(filename: str):
 @app.get("/get-missing-reports")
 def get_missing_reports():
     reports = list(collection.find())
-
     for r in reports:
         r["_id"] = str(r["_id"])
-
     return reports
 
 # ===========================
@@ -320,11 +318,9 @@ def get_missing_reports():
 @app.get("/get-reports")
 def get_reports():
     reports = list(collection.find())
-
     for r in reports:
         r["_id"] = str(r["_id"])
         r["status"] = r.get("status", "Missing")
-
     return reports
 
 # ===========================
@@ -336,5 +332,4 @@ def mark_found(report_id: str):
         {"_id": ObjectId(report_id)},
         {"$set": {"status": "Found"}}
     )
-
     return {"message": "Marked as Found"}
