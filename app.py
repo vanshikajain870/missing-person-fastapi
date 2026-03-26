@@ -352,10 +352,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pymongo import MongoClient
-from datetime import datetime, date
 from bson import ObjectId
+from datetime import datetime, date
 import os
-import re
 import uuid
 from typing import Optional
 
@@ -376,7 +375,6 @@ app.add_middleware(
 # MongoDB Connection
 # ===========================
 MONGO_URI = os.getenv("MONGO_URI")
-
 if not MONGO_URI:
     raise RuntimeError("MONGO_URI environment variable is not set!")
 
@@ -388,23 +386,18 @@ try:
 except Exception as e:
     print("❌ MongoDB Connection Failed:", e)
 
-db                  = client["missing_person_db"]
-reports_collection  = db["user_login_details"]   # public lost person reports
-inmates_collection  = db["inmates"]              # admin inmate registrations
+db = client["missing_person_db"]
+inmates_collection    = db["inmates"]
+missing_reports_coll  = db["missing_reports"]   # for public lost-person reports
 
 # ===========================
-# Upload Folders
+# Upload Folder Setup
 # ===========================
-UPLOAD_PHOTOS  = os.path.join(os.getcwd(), "uploads", "photos")
-UPLOAD_INMATES = os.path.join(os.getcwd(), "uploads", "inmates")
-os.makedirs(UPLOAD_PHOTOS,  exist_ok=True)
-os.makedirs(UPLOAD_INMATES, exist_ok=True)
+UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads", "inmates")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ===========================
-# Static file serving
-# /uploads/photos/xxx.jpg
-# /uploads/inmates/xxx.jpg
-# /static/script.js  etc.
+# Mount static folders BEFORE catch-all route
 # ===========================
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.mount("/static",  StaticFiles(directory="static"),  name="static")
@@ -421,123 +414,26 @@ def serve_index():
 # ===========================
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "message": "Safe Return API is running"}
 
-# ══════════════════════════════════════════════════════
-# PUBLIC ROUTES — Lost Person Report
-# ══════════════════════════════════════════════════════
-
-@app.post("/submit")
-async def submit_lost_person(
-    public_fullName:        str            = Form(...),
-    public_age:             str            = Form(...),
-    gender:                 str            = Form(...),
-    language_spoken:        Optional[str]  = Form(None),
-    public_location:        str            = Form(...),
-    public_dateTime:        str            = Form(...),
-    clothing_description:   Optional[str]  = Form(None),
-    general_description:    Optional[str]  = Form(None),
-    medical_condition:      Optional[str]  = Form(None),
-    public_familyName:      str            = Form(...),
-    public_familyPhone:     str            = Form(...),
-    photo:                  Optional[UploadFile] = File(None)
-):
-    # Phone validation
-    phone_number = public_familyPhone.strip()
-    if not re.match(r'^[6-9]\d{9}$', phone_number):
-        raise HTTPException(status_code=400, detail="Invalid Indian phone number")
-
-    # Date validation
-    if not public_dateTime:
-        raise HTTPException(status_code=400, detail="Date & time required")
-
-    try:
-        selected_date = datetime.fromisoformat(public_dateTime)
-        if selected_date > datetime.now():
-            raise HTTPException(status_code=400, detail="Future date not allowed")
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format")
-
-    # Save photo
-    photo_path = None
-    if photo and photo.filename:
-        ext             = os.path.splitext(photo.filename)[1].lower()
-        unique_filename = f"{uuid.uuid4().hex}{ext}"
-        file_path       = os.path.join(UPLOAD_PHOTOS, unique_filename)
-        with open(file_path, "wb") as f:
-            f.write(await photo.read())
-        photo_path = f"uploads/photos/{unique_filename}"
-
-    document = {
-        "full_name":            public_fullName,
-        "age":                  public_age,
-        "gender":               gender,
-        "language_spoken":      language_spoken,
-        "last_seen_location":   public_location,
-        "last_seen_datetime":   public_dateTime,
-        "clothing_description": clothing_description,
-        "general_description":  general_description,
-        "medical_condition":    medical_condition,
-        "contact_name":         public_familyName,
-        "contact_phone":        phone_number,
-        "photo_path":           photo_path,
-        "status":               "Missing",
-        "created_at":           datetime.now().isoformat()
-    }
-
-    result = reports_collection.insert_one(document)
-    print("✅ Inserted Lost Person ID:", result.inserted_id)
-
-    return {"message": "Report submitted successfully"}
-
-
-@app.get("/get-missing-reports")
-def get_missing_reports():
-    reports = list(reports_collection.find())
-    for r in reports:
-        r["_id"] = str(r["_id"])
-    return reports
-
-
-@app.get("/get-reports")
-def get_reports():
-    reports = list(reports_collection.find())
-    for r in reports:
-        r["_id"]    = str(r["_id"])
-        r["status"] = r.get("status", "Missing")
-    return reports
-
-
-@app.post("/mark-found/{report_id}")
-def mark_found(report_id: str):
-    reports_collection.update_one(
-        {"_id": ObjectId(report_id)},
-        {"$set": {"status": "Found"}}
-    )
-    return {"message": "Marked as Found"}
-
-
-# ══════════════════════════════════════════════════════
-# ADMIN ROUTES — Inmate Registration
-# ══════════════════════════════════════════════════════
-
+# ===========================
+# Register Inmate (Admin)
+# ===========================
 @app.post("/register-inmate")
 async def register_inmate(
-    inmate_id:       str                = Form(...),
-    registration_no: str                = Form(...),
-    unique_id:       Optional[str]      = Form(None),
-    status:          str                = Form(...),
-    full_name:       str                = Form(...),
-    dob:             str                = Form(...),
-    gender:          str                = Form(...),
-    languages:       Optional[str]      = Form(None),
-    address:         Optional[str]      = Form(None),
-    joining_date:    str                = Form(...),
-    photo:           Optional[UploadFile] = File(None)
+    inmate_id:       str            = Form(...),
+    registration_no: str            = Form(...),
+    unique_id:       Optional[str]  = Form(None),
+    status:          str            = Form(...),
+    full_name:       str            = Form(...),
+    dob:             str            = Form(...),
+    gender:          str            = Form(...),
+    languages:       Optional[str]  = Form(None),
+    address:         Optional[str]  = Form(None),
+    joining_date:    str            = Form(...),
+    photo: Optional[UploadFile]     = File(None)
 ):
-    # Date validation
-    # HTML <input type="date"> sends "YYYY-MM-DD" (date only, no time)
-    # Use date.fromisoformat() — works correctly on all Python versions
+    # Date Validation
     try:
         dob_date         = date.fromisoformat(dob)
         joining_date_obj = date.fromisoformat(joining_date)
@@ -545,26 +441,26 @@ async def register_inmate(
 
         if dob_date > today:
             raise HTTPException(status_code=400, detail="Future Date of Birth is not allowed")
-
         if joining_date_obj > today:
             raise HTTPException(status_code=400, detail="Future Joining Date is not allowed")
-
         if joining_date_obj < dob_date:
             raise HTTPException(status_code=400, detail="Joining date cannot be before Date of Birth")
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}")
 
-    # Save photo
+    # Save Photo
     photo_path = None
     if photo and photo.filename:
         ext             = os.path.splitext(photo.filename)[1].lower()
         unique_filename = f"{uuid.uuid4().hex}{ext}"
-        file_path       = os.path.join(UPLOAD_INMATES, unique_filename)
+        file_path       = os.path.join(UPLOAD_FOLDER, unique_filename)
+        contents = await photo.read()
         with open(file_path, "wb") as f:
-            f.write(await photo.read())
+            f.write(contents)
         photo_path = f"uploads/inmates/{unique_filename}"
 
+    # Save to MongoDB
     inmate_document = {
         "inmate_id":       inmate_id,
         "registration_no": registration_no,
@@ -589,10 +485,85 @@ async def register_inmate(
 
     return {"message": "Inmate registered successfully"}
 
+# ===========================
+# Get all missing reports (for admin table)
+# ===========================
+@app.get("/get-missing-reports")
+def get_missing_reports():
+    try:
+        reports = list(missing_reports_coll.find())
+        for r in reports:
+            r["_id"] = str(r["_id"])   # convert ObjectId → string for JSON
+        return reports
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/get-inmates")
-def get_inmates():
-    inmates = list(inmates_collection.find())
-    for i in inmates:
-        i["_id"] = str(i["_id"])
-    return inmates
+# ===========================
+# Submit public lost person report
+# ===========================
+@app.post("/submit-lost-report")
+async def submit_lost_report(
+    full_name:            str            = Form(...),
+    age:                  Optional[str]  = Form(None),
+    gender:               Optional[str]  = Form(None),
+    language_spoken:      Optional[str]  = Form(None),
+    last_seen_location:   Optional[str]  = Form(None),
+    last_seen_datetime:   Optional[str]  = Form(None),
+    clothing_description: Optional[str]  = Form(None),
+    general_description:  Optional[str]  = Form(None),
+    medical_condition:    Optional[str]  = Form(None),
+    contact_name:         Optional[str]  = Form(None),
+    contact_phone:        str            = Form(...),
+    photo: Optional[UploadFile]          = File(None)
+):
+    photo_path = None
+    if photo and photo.filename:
+        ext             = os.path.splitext(photo.filename)[1].lower()
+        unique_filename = f"{uuid.uuid4().hex}{ext}"
+        file_path       = os.path.join(UPLOAD_FOLDER, unique_filename)
+        contents = await photo.read()
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        photo_path = f"uploads/inmates/{unique_filename}"
+
+    report = {
+        "full_name":            full_name,
+        "age":                  age,
+        "gender":               gender,
+        "language_spoken":      language_spoken,
+        "last_seen_location":   last_seen_location,
+        "last_seen_datetime":   last_seen_datetime,
+        "clothing_description": clothing_description,
+        "general_description":  general_description,
+        "medical_condition":    medical_condition,
+        "contact_name":         contact_name,
+        "contact_phone":        contact_phone,
+        "photo_path":           photo_path,
+        "status":               "Missing",
+        "created_at":           datetime.now().isoformat()
+    }
+
+    try:
+        result = missing_reports_coll.insert_one(report)
+        print("✅ Lost report inserted:", result.inserted_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Database error.")
+
+    return {"message": "Lost person report submitted successfully"}
+
+# ===========================
+# Mark person as Found
+# ===========================
+@app.post("/mark-found/{report_id}")
+def mark_found(report_id: str):
+    try:
+        result = missing_reports_coll.update_one(
+            {"_id": ObjectId(report_id)},
+            {"$set": {"status": "Found"}}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Report not found")
+        return {"message": "Status updated to Found"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
