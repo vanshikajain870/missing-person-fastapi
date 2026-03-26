@@ -201,7 +201,7 @@ async function renderAdminTable() {
     const statusFilter = document.getElementById("admin-filt").value;
 
     try {
-        const response = await fetch("http://missing-person-fastapi.onrender.com/get-missing-reports");
+        const response = await fetch("https://missing-person-fastapi.onrender.com/get-missing-reports");
         const reports = await response.json();
 
         let filtered = reports;
@@ -238,7 +238,7 @@ async function renderAdminTable() {
             const statusClass = status.toLowerCase();
 
             const photoHtml = r.photo_path
-                ? `<img src="http://missing-person-fastapi.onrender.com/${r.photo_path}" width="40" height="40" style="border-radius:50%">`
+                ? `<img src="https://missing-person-fastapi.onrender.com/${r.photo_path}" width="40" height="40" style="border-radius:50%">`
                 : `<i class="fas fa-user"></i>`;
 
             const foundBtn = status !== "Found"
@@ -293,7 +293,7 @@ async function markAdminFound(id) {
 
     try {
         const response = await fetch(
-            `http://missing-person-fastapi.onrender.com/mark-found/${id}`,
+            `https://missing-person-fastapi.onrender.com/mark-found/${id}`,
             {
                 method: "POST"
             }
