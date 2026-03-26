@@ -143,7 +143,7 @@ except Exception as e:
     print("MongoDB Connection Failed:", e)
 
 db = client["missing_person_db"]
-collection = db["found_persons"]
+found_collection = db["found_persons"]   # ✅ FIXED: renamed to found_collection
 
 # ===========================
 # Serve Static Frontend Files
@@ -209,6 +209,6 @@ def found_person(data: FoundPersonRequest):
         "contact_number": phone_number
     }
 
-    found_collection.insert_one(found_document)
+    found_collection.insert_one(found_document)   # ✅ now matches the variable above
 
     return {"message": "Found person stored successfully"}
