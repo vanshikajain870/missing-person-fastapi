@@ -13,8 +13,8 @@ async function submitAdminInmateReport() {
     // ================================
     // Date Validation
     // ================================
-    const dobValue = document.getElementById("admin-dob").value;
-    const joiningDateValue = document.getElementById("admin-joiningDate").value;
+    const dobValue = document.getElementById("admin_dob").value;
+    const joiningDateValue = document.getElementById("admin_joiningDate").value;
     const currentDate = new Date();
 
     if (!dobValue) {
@@ -47,9 +47,9 @@ async function submitAdminInmateReport() {
     // ================================
     // Required Fields Check
     // ================================
-    const inmateId  = document.getElementById("admin-inmateId").value.trim();
-    const regNo     = document.getElementById("admin-regNo").value.trim();
-    const fullName  = document.getElementById("admin-fullName").value.trim();
+    const inmateId  = document.getElementById("admin_inmateId").value.trim();
+    const regNo     = document.getElementById("admin_regNo").value.trim();
+    const fullName  = document.getElementById("admin_fullName").value.trim();
 
     if (!inmateId || !regNo || !fullName) {
         alert("Please fill in Inmate ID, Registration No, and Full Name.");
@@ -62,13 +62,13 @@ async function submitAdminInmateReport() {
     const formData = new FormData();
     formData.append("inmate_id",       inmateId);
     formData.append("registration_no", regNo);
-    formData.append("unique_id",       document.getElementById("admin-uniqueId").value);
-    formData.append("status",          document.getElementById("admin-status").value);
+    formData.append("unique_id",       document.getElementById("admin_uniqueId").value);
+    formData.append("status",          document.getElementById("admin_status").value);
     formData.append("full_name",       fullName);
     formData.append("dob",             dobValue);
-    formData.append("gender",          document.getElementById("admin-gender").value);
-    formData.append("languages",       document.getElementById("admin-languages").value);
-    formData.append("address",         document.getElementById("admin-address").value);
+    formData.append("gender",          document.getElementById("admin_gender").value);
+    formData.append("languages",       document.getElementById("admin_languages").value);
+    formData.append("address",         document.getElementById("admin_address").value);
     formData.append("joining_date",    joiningDateValue);
 
     const photoInput = document.getElementById("adminPhotoInput");
@@ -110,8 +110,8 @@ async function submitAdminInmateReport() {
 window.addEventListener("DOMContentLoaded", function () {
     const today = new Date().toISOString().split("T")[0];
 
-    const dobInput     = document.getElementById("admin-dob");
-    const joiningInput = document.getElementById("admin-joiningDate");
+    const dobInput     = document.getElementById("admin_dob");
+    const joiningInput = document.getElementById("admin_joiningDate");
 
     if (dobInput)     dobInput.max     = today;
     if (joiningInput) joiningInput.max = today;
