@@ -392,7 +392,7 @@ db = client["missing_person_db"]
 # ── Two separate collections ──────────────────────────
 # 1. Public lost-person reports  →  missing_reports
 # 2. Admin inmate registrations  →  inmates
-missing_reports_coll = db["missing_reports"]
+missing_reports_coll = db["user_login_details"]
 inmates_collection   = db["inmates"]
 
 # ===========================
