@@ -167,16 +167,196 @@
 #
 
 
+# from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+# from fastapi.middleware.cors import CORSMiddleware
+# from fastapi.responses import FileResponse, HTMLResponse
+# from fastapi.staticfiles import StaticFiles
+# from pymongo import MongoClient
+# from bson import ObjectId
+# import os
+# import re
+# import uuid
+# from datetime import datetime
+# from typing import Optional
+
+# app = FastAPI()
+
+# # ===========================
+# # CORS
+# # ===========================
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+
+# # ===========================
+# # MongoDB Connection
+# # ===========================
+# MONGO_URI = os.getenv("MONGO_URI")
+
+# if not MONGO_URI:
+#     raise RuntimeError("MONGO_URI environment variable is not set!")
+
+# client = MongoClient(MONGO_URI)
+
+# try:
+#     client.server_info()
+#     print("MongoDB Connected Successfully")
+# except Exception as e:
+#     print("MongoDB Connection Failed:", e)
+
+# db = client["missing_person_db"]
+# collection = db["user_login_details"]
+
+# # ===========================
+# # Upload Folder
+# # ===========================
+# UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads/photos")
+# os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# # ===========================
+# # Serve Static Frontend Files
+# # ===========================
+# STATIC_DIR = os.path.join(os.getcwd(), "static")
+
+# if os.path.exists(STATIC_DIR):
+#     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# # ===========================
+# # Home Route — serves index.html
+# # ===========================
+# @app.get("/", response_class=HTMLResponse)
+# async def serve_index():
+#     index_path = os.path.join(STATIC_DIR, "index.html")
+#     if not os.path.exists(index_path):
+#         return HTMLResponse(content="<h2>Frontend not found. Place index.html inside the /static folder.</h2>", status_code=404)
+#     with open(index_path, "r", encoding="utf-8") as f:
+#         return HTMLResponse(content=f.read())
+
+# # ===========================
+# # Submit Route
+# # ===========================
+# @app.post("/submit")
+# async def submit(
+#     public_fullName: str = Form(...),
+#     public_age: str = Form(...),
+#     gender: str = Form(...),
+#     language_spoken: Optional[str] = Form(None),
+#     public_location: str = Form(...),
+#     public_dateTime: str = Form(...),
+#     clothing_description: Optional[str] = Form(None),
+#     general_description: Optional[str] = Form(None),
+#     medical_condition: Optional[str] = Form(None),
+#     public_familyName: str = Form(...),
+#     public_familyPhone: str = Form(...),
+#     photo: UploadFile = File(None)
+# ):
+#     # Phone validation
+#     phone_number = public_familyPhone.strip()
+#     if not re.match(r'^[6-9]\d{9}$', phone_number):
+#         raise HTTPException(status_code=400, detail="Invalid Indian phone number")
+
+#     # Date validation
+#     if not public_dateTime:
+#         raise HTTPException(status_code=400, detail="Date & time required")
+
+#     try:
+#         selected_date = datetime.fromisoformat(public_dateTime)
+#         if selected_date > datetime.now():
+#             raise HTTPException(status_code=400, detail="Future date not allowed")
+#     except ValueError:
+#         raise HTTPException(status_code=400, detail="Invalid date format")
+
+#     # Save photo
+#     photo_path = None
+#     if photo and photo.filename:
+#         ext = os.path.splitext(photo.filename)[1]
+#         unique_filename = f"{uuid.uuid4().hex}{ext}"
+#         file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+
+#         with open(file_path, "wb") as f:
+#             f.write(await photo.read())
+
+#         photo_path = f"uploads/photos/{unique_filename}"
+
+#     # MongoDB document
+#     document = {
+#         "full_name": public_fullName,
+#         "age": public_age,
+#         "gender": gender,
+#         "language_spoken": language_spoken,
+#         "last_seen_location": public_location,
+#         "last_seen_datetime": public_dateTime,
+#         "clothing_description": clothing_description,
+#         "general_description": general_description,
+#         "medical_condition": medical_condition,
+#         "contact_name": public_familyName,
+#         "contact_phone": phone_number,
+#         "photo_path": photo_path,
+#         "status": "Missing"
+#     }
+
+#     result = collection.insert_one(document)
+#     print("Inserted ID:", result.inserted_id)
+
+#     return {"message": "Report submitted successfully"}
+
+# # ===========================
+# # Serve uploaded photos
+# # ===========================
+# @app.get("/uploads/photos/{filename}")
+# def get_photo(filename: str):
+#     file_path = os.path.join(UPLOAD_FOLDER, filename)
+#     if not os.path.exists(file_path):
+#         raise HTTPException(status_code=404, detail="Photo not found")
+#     return FileResponse(file_path)
+
+# # ===========================
+# # Get Missing Reports
+# # ===========================
+# @app.get("/get-missing-reports")
+# def get_missing_reports():
+#     reports = list(collection.find())
+#     for r in reports:
+#         r["_id"] = str(r["_id"])
+#     return reports
+
+# # ===========================
+# # Get All Reports
+# # ===========================
+# @app.get("/get-reports")
+# def get_reports():
+#     reports = list(collection.find())
+#     for r in reports:
+#         r["_id"] = str(r["_id"])
+#         r["status"] = r.get("status", "Missing")
+#     return reports
+
+# # ===========================
+# # Mark as Found
+# # ===========================
+# @app.post("/mark-found/{report_id}")
+# def mark_found(report_id: str):
+#     collection.update_one(
+#         {"_id": ObjectId(report_id)},
+#         {"$set": {"status": "Found"}}
+#     )
+#     return {"message": "Marked as Found"}
+
+
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pymongo import MongoClient
+from datetime import datetime, date
 from bson import ObjectId
 import os
 import re
 import uuid
-from datetime import datetime
 from typing import Optional
 
 app = FastAPI()
@@ -204,55 +384,63 @@ client = MongoClient(MONGO_URI)
 
 try:
     client.server_info()
-    print("MongoDB Connected Successfully")
+    print("✅ MongoDB Connected Successfully")
 except Exception as e:
-    print("MongoDB Connection Failed:", e)
+    print("❌ MongoDB Connection Failed:", e)
 
-db = client["missing_person_db"]
-collection = db["user_login_details"]
-
-# ===========================
-# Upload Folder
-# ===========================
-UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads/photos")
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+db                  = client["missing_person_db"]
+reports_collection  = db["user_login_details"]   # public lost person reports
+inmates_collection  = db["inmates"]              # admin inmate registrations
 
 # ===========================
-# Serve Static Frontend Files
+# Upload Folders
 # ===========================
-STATIC_DIR = os.path.join(os.getcwd(), "static")
-
-if os.path.exists(STATIC_DIR):
-    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
-# ===========================
-# Home Route — serves index.html
-# ===========================
-@app.get("/", response_class=HTMLResponse)
-async def serve_index():
-    index_path = os.path.join(STATIC_DIR, "index.html")
-    if not os.path.exists(index_path):
-        return HTMLResponse(content="<h2>Frontend not found. Place index.html inside the /static folder.</h2>", status_code=404)
-    with open(index_path, "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
+UPLOAD_PHOTOS  = os.path.join(os.getcwd(), "uploads", "photos")
+UPLOAD_INMATES = os.path.join(os.getcwd(), "uploads", "inmates")
+os.makedirs(UPLOAD_PHOTOS,  exist_ok=True)
+os.makedirs(UPLOAD_INMATES, exist_ok=True)
 
 # ===========================
-# Submit Route
+# Static file serving
+# /uploads/photos/xxx.jpg
+# /uploads/inmates/xxx.jpg
+# /static/script.js  etc.
 # ===========================
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/static",  StaticFiles(directory="static"),  name="static")
+
+# ===========================
+# Serve index.html at root
+# ===========================
+@app.get("/")
+def serve_index():
+    return FileResponse("index.html")
+
+# ===========================
+# Health check
+# ===========================
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+# ══════════════════════════════════════════════════════
+# PUBLIC ROUTES — Lost Person Report
+# ══════════════════════════════════════════════════════
+
 @app.post("/submit")
-async def submit(
-    public_fullName: str = Form(...),
-    public_age: str = Form(...),
-    gender: str = Form(...),
-    language_spoken: Optional[str] = Form(None),
-    public_location: str = Form(...),
-    public_dateTime: str = Form(...),
-    clothing_description: Optional[str] = Form(None),
-    general_description: Optional[str] = Form(None),
-    medical_condition: Optional[str] = Form(None),
-    public_familyName: str = Form(...),
-    public_familyPhone: str = Form(...),
-    photo: UploadFile = File(None)
+async def submit_lost_person(
+    public_fullName:        str            = Form(...),
+    public_age:             str            = Form(...),
+    gender:                 str            = Form(...),
+    language_spoken:        Optional[str]  = Form(None),
+    public_location:        str            = Form(...),
+    public_dateTime:        str            = Form(...),
+    clothing_description:   Optional[str]  = Form(None),
+    general_description:    Optional[str]  = Form(None),
+    medical_condition:      Optional[str]  = Form(None),
+    public_familyName:      str            = Form(...),
+    public_familyPhone:     str            = Form(...),
+    photo:                  Optional[UploadFile] = File(None)
 ):
     # Phone validation
     phone_number = public_familyPhone.strip()
@@ -273,75 +461,138 @@ async def submit(
     # Save photo
     photo_path = None
     if photo and photo.filename:
-        ext = os.path.splitext(photo.filename)[1]
+        ext             = os.path.splitext(photo.filename)[1].lower()
         unique_filename = f"{uuid.uuid4().hex}{ext}"
-        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-
+        file_path       = os.path.join(UPLOAD_PHOTOS, unique_filename)
         with open(file_path, "wb") as f:
             f.write(await photo.read())
-
         photo_path = f"uploads/photos/{unique_filename}"
 
-    # MongoDB document
     document = {
-        "full_name": public_fullName,
-        "age": public_age,
-        "gender": gender,
-        "language_spoken": language_spoken,
-        "last_seen_location": public_location,
-        "last_seen_datetime": public_dateTime,
+        "full_name":            public_fullName,
+        "age":                  public_age,
+        "gender":               gender,
+        "language_spoken":      language_spoken,
+        "last_seen_location":   public_location,
+        "last_seen_datetime":   public_dateTime,
         "clothing_description": clothing_description,
-        "general_description": general_description,
-        "medical_condition": medical_condition,
-        "contact_name": public_familyName,
-        "contact_phone": phone_number,
-        "photo_path": photo_path,
-        "status": "Missing"
+        "general_description":  general_description,
+        "medical_condition":    medical_condition,
+        "contact_name":         public_familyName,
+        "contact_phone":        phone_number,
+        "photo_path":           photo_path,
+        "status":               "Missing",
+        "created_at":           datetime.now().isoformat()
     }
 
-    result = collection.insert_one(document)
-    print("Inserted ID:", result.inserted_id)
+    result = reports_collection.insert_one(document)
+    print("✅ Inserted Lost Person ID:", result.inserted_id)
 
     return {"message": "Report submitted successfully"}
 
-# ===========================
-# Serve uploaded photos
-# ===========================
-@app.get("/uploads/photos/{filename}")
-def get_photo(filename: str):
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Photo not found")
-    return FileResponse(file_path)
 
-# ===========================
-# Get Missing Reports
-# ===========================
 @app.get("/get-missing-reports")
 def get_missing_reports():
-    reports = list(collection.find())
+    reports = list(reports_collection.find())
     for r in reports:
         r["_id"] = str(r["_id"])
     return reports
 
-# ===========================
-# Get All Reports
-# ===========================
+
 @app.get("/get-reports")
 def get_reports():
-    reports = list(collection.find())
+    reports = list(reports_collection.find())
     for r in reports:
-        r["_id"] = str(r["_id"])
+        r["_id"]    = str(r["_id"])
         r["status"] = r.get("status", "Missing")
     return reports
 
-# ===========================
-# Mark as Found
-# ===========================
+
 @app.post("/mark-found/{report_id}")
 def mark_found(report_id: str):
-    collection.update_one(
+    reports_collection.update_one(
         {"_id": ObjectId(report_id)},
         {"$set": {"status": "Found"}}
     )
     return {"message": "Marked as Found"}
+
+
+# ══════════════════════════════════════════════════════
+# ADMIN ROUTES — Inmate Registration
+# ══════════════════════════════════════════════════════
+
+@app.post("/register-inmate")
+async def register_inmate(
+    inmate_id:       str                = Form(...),
+    registration_no: str                = Form(...),
+    unique_id:       Optional[str]      = Form(None),
+    status:          str                = Form(...),
+    full_name:       str                = Form(...),
+    dob:             str                = Form(...),
+    gender:          str                = Form(...),
+    languages:       Optional[str]      = Form(None),
+    address:         Optional[str]      = Form(None),
+    joining_date:    str                = Form(...),
+    photo:           Optional[UploadFile] = File(None)
+):
+    # Date validation
+    # HTML <input type="date"> sends "YYYY-MM-DD" (date only, no time)
+    # Use date.fromisoformat() — works correctly on all Python versions
+    try:
+        dob_date         = date.fromisoformat(dob)
+        joining_date_obj = date.fromisoformat(joining_date)
+        today            = date.today()
+
+        if dob_date > today:
+            raise HTTPException(status_code=400, detail="Future Date of Birth is not allowed")
+
+        if joining_date_obj > today:
+            raise HTTPException(status_code=400, detail="Future Joining Date is not allowed")
+
+        if joining_date_obj < dob_date:
+            raise HTTPException(status_code=400, detail="Joining date cannot be before Date of Birth")
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}")
+
+    # Save photo
+    photo_path = None
+    if photo and photo.filename:
+        ext             = os.path.splitext(photo.filename)[1].lower()
+        unique_filename = f"{uuid.uuid4().hex}{ext}"
+        file_path       = os.path.join(UPLOAD_INMATES, unique_filename)
+        with open(file_path, "wb") as f:
+            f.write(await photo.read())
+        photo_path = f"uploads/inmates/{unique_filename}"
+
+    inmate_document = {
+        "inmate_id":       inmate_id,
+        "registration_no": registration_no,
+        "unique_id":       unique_id,
+        "status":          status,
+        "full_name":       full_name,
+        "dob":             dob,
+        "gender":          gender,
+        "languages":       languages,
+        "address":         address,
+        "joining_date":    joining_date,
+        "photo_path":      photo_path,
+        "created_at":      datetime.now().isoformat()
+    }
+
+    try:
+        result = inmates_collection.insert_one(inmate_document)
+        print("✅ Inserted Inmate ID:", result.inserted_id)
+    except Exception as e:
+        print("❌ MongoDB insert failed:", e)
+        raise HTTPException(status_code=500, detail="Database error. Could not save inmate record.")
+
+    return {"message": "Inmate registered successfully"}
+
+
+@app.get("/get-inmates")
+def get_inmates():
+    inmates = list(inmates_collection.find())
+    for i in inmates:
+        i["_id"] = str(i["_id"])
+    return inmates
