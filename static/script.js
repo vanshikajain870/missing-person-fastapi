@@ -441,16 +441,16 @@ function submitAdminInmateReport() {
         return;
     }
     const inmateData = {
-        inmateId:       document.getElementById('admin-inmateId').value,
-        registrationNo: document.getElementById('admin-regNo').value,
-        uniqueId:       document.getElementById('admin-uniqueId').value,
-        status:         document.getElementById('admin-status').value,
-        fullName:       document.getElementById('admin-fullName').value,
-        dob:            document.getElementById('admin-dob').value,
-        gender:         document.getElementById('admin-gender').value,
-        languages:      document.getElementById('admin-languages').value,
-        address:        document.getElementById('admin-address').value,
-        joiningDate:    document.getElementById('admin-joiningDate').value
+        inmateId:       document.getElementById('admin_inmateId').value,
+        registrationNo: document.getElementById('admin_regNo').value,
+        uniqueId:       document.getElementById('admin_uniqueId').value,
+        status:         document.getElementById('admin_status').value,
+        fullName:       document.getElementById('admin_fullName').value,
+        dob:            document.getElementById('admin_dob').value,
+        gender:         document.getElementById('admin_gender').value,
+        languages:      document.getElementById('admin_languages').value,
+        address:        document.getElementById('admin_address').value,
+        joiningDate:    document.getElementById('admin_joiningDate').value
     };
     if (!inmateData.inmateId || !inmateData.registrationNo || !inmateData.fullName) {
         alert("Please fill in the required fields (ID, Registration No, and Name).");
