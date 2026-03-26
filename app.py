@@ -388,7 +388,7 @@ except Exception as e:
 
 db = client["missing_person_db"]
 inmates_collection    = db["inmates"]
-missing_reports_coll  = db["missing_reports"]   # for public lost-person reports
+missing_reports_coll  = db["user_login_details"]   # for public lost-person reports
 
 # ===========================
 # Upload Folder Setup
