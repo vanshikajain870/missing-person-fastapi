@@ -1,21 +1,24 @@
 // ================================
-// BASE URL
+// BASE URL for Admin (app2.py)
 // ================================
 const ADMIN_BASE_URL = "https://missing-person-fastapi.onrender.com";
-// After Render deployment, change to: const ADMIN_BASE_URL = "https://your-app-name.onrender.com";
+// Change this to your actual Render URL for app2.py after deployment
 
 
 // ================================
 // SUBMIT ADMIN INMATE REPORT
+// This function is ONLY defined here in connect1.js
+// It is NOT in script.js — that version was removed
 // ================================
 async function submitAdminInmateReport() {
 
     // ================================
-    // Date Validation
+    // Date Validation (frontend)
     // ================================
-    const dobValue = document.getElementById("admin_dob").value;
+    const dobValue        = document.getElementById("admin_dob").value;
     const joiningDateValue = document.getElementById("admin_joiningDate").value;
-    const currentDate = new Date();
+    const today           = new Date();
+    today.setHours(0, 0, 0, 0); // compare dates only, ignore time
 
     if (!dobValue) {
         alert("Date of Birth is required.");
@@ -23,7 +26,7 @@ async function submitAdminInmateReport() {
     }
 
     const dobDate = new Date(dobValue);
-    if (dobDate > currentDate) {
+    if (dobDate > today) {
         alert("Future Date of Birth is not allowed.");
         return;
     }
@@ -34,7 +37,7 @@ async function submitAdminInmateReport() {
     }
 
     const joiningDate = new Date(joiningDateValue);
-    if (joiningDate > currentDate) {
+    if (joiningDate > today) {
         alert("Future Joining Date is not allowed.");
         return;
     }
@@ -47,9 +50,9 @@ async function submitAdminInmateReport() {
     // ================================
     // Required Fields Check
     // ================================
-    const inmateId  = document.getElementById("admin_inmateId").value.trim();
-    const regNo     = document.getElementById("admin_regNo").value.trim();
-    const fullName  = document.getElementById("admin_fullName").value.trim();
+    const inmateId = document.getElementById("admin_inmateId").value.trim();
+    const regNo    = document.getElementById("admin_regNo").value.trim();
+    const fullName = document.getElementById("admin_fullName").value.trim();
 
     if (!inmateId || !regNo || !fullName) {
         alert("Please fill in Inmate ID, Registration No, and Full Name.");
@@ -58,6 +61,7 @@ async function submitAdminInmateReport() {
 
     // ================================
     // Build FormData
+    // Field names here MUST match the FastAPI Form(...) parameter names in app2.py
     // ================================
     const formData = new FormData();
     formData.append("inmate_id",       inmateId);
@@ -65,11 +69,11 @@ async function submitAdminInmateReport() {
     formData.append("unique_id",       document.getElementById("admin_uniqueId").value);
     formData.append("status",          document.getElementById("admin_status").value);
     formData.append("full_name",       fullName);
-    formData.append("dob",             dobValue);
+    formData.append("dob",             dobValue);          // sent as "YYYY-MM-DD"
     formData.append("gender",          document.getElementById("admin_gender").value);
     formData.append("languages",       document.getElementById("admin_languages").value);
     formData.append("address",         document.getElementById("admin_address").value);
-    formData.append("joining_date",    joiningDateValue);
+    formData.append("joining_date",    joiningDateValue);  // sent as "YYYY-MM-DD"
 
     const photoInput = document.getElementById("adminPhotoInput");
     if (photoInput.files.length > 0) {
@@ -77,38 +81,40 @@ async function submitAdminInmateReport() {
     }
 
     // ================================
-    // Send to FastAPI
+    // Send to FastAPI backend (app2.py)
     // ================================
     try {
         const response = await fetch(`${ADMIN_BASE_URL}/register-inmate`, {
             method: "POST",
             body: formData
+            // Do NOT set Content-Type header manually —
+            // browser sets it automatically with the correct boundary for FormData
         });
 
         const result = await response.json();
 
         if (!response.ok) {
-            // FastAPI sends error inside "detail"
-            alert(result.detail || "Server error. Please try again.");
+            // FastAPI HTTPException sends errors in "detail" field
+            alert("Error: " + (result.detail || "Server error. Please try again."));
             return;
         }
 
-        alert(result.message);
+        alert(result.message);  // "Inmate registered successfully"
         showDashboard();
 
     } catch (error) {
-        console.error("Error:", error);
-        alert("Could not connect to the server. Please try again.");
+        console.error("Network error:", error);
+        alert("Could not connect to the server. Please check your connection.");
     }
 }
 
 
 // ================================
 // SET DATE MAX TO TODAY
-// Prevents browser from allowing future dates in the date pickers
+// Prevents the browser date picker from allowing future dates
 // ================================
 window.addEventListener("DOMContentLoaded", function () {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
 
     const dobInput     = document.getElementById("admin_dob");
     const joiningInput = document.getElementById("admin_joiningDate");
