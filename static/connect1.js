@@ -98,16 +98,16 @@
 // Found Report — Frontend Submit
 // ================================
 
-const BASE_URL = "http://missing-person-fastapi.onrender.com"; 
+const BASE_URL = "https://missing-person-fastapi.onrender.com"; // ✅ https not http
 
 function submitFoundReport() {
 
     console.log("Button clicked");
 
-    const foundLocation  = document.getElementById("foundLocation").value.trim();
-    const foundDatetime  = document.getElementById("foundDatetime").value;
-    const contactName    = document.getElementById("contact_name").value.trim();
-    const contactNumber  = document.getElementById("contact_phone").value.trim();
+    const foundLocation = document.getElementById("foundLocation").value.trim();
+    const foundDatetime = document.getElementById("foundDatetime").value;
+    const contactName   = document.getElementById("contact_name").value.trim();
+    const contactNumber = document.getElementById("contact_phone").value.trim();
 
     // Required fields check
     if (!foundLocation || !foundDatetime || !contactName || !contactNumber) {
@@ -130,17 +130,16 @@ function submitFoundReport() {
         return;
     }
 
-    // 👇 Uses the same BASE_URL defined in connect.js
     fetch(`${BASE_URL}/found-person`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            found_location:  foundLocation,
-            found_datetime:  foundDatetime,
-            contact_name:    contactName,
-            contact_number:  contactNumber
+            found_location: foundLocation,
+            found_datetime: foundDatetime,
+            contact_name:   contactName,
+            contact_number: contactNumber
         })
     })
     .then(res => res.json())
