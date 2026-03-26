@@ -4,7 +4,7 @@
 # const ADMIN_BASE_URL = "https://missing-person-fastapi.onrender.com";
 # // Change this to your actual Render URL for app2.py after deployment
 
-
+console.log("Button clicked");
 # // ================================
 # // SUBMIT ADMIN INMATE REPORT
 # // This function is ONLY defined here in connect1.js
