@@ -434,51 +434,51 @@ function showFoundReportForm() {
 // ══════════════════════════════════════════════════════
 // FORM SUBMISSIONS
 // ══════════════════════════════════════════════════════
-function submitAdminInmateReport() {
-    const photoFiles = document.getElementById('adminPhotoInput').files;
-    if (photoFiles.length === 0) {
-        alert("Please upload at least one photo of the inmate for identification.");
-        return;
-    }
-    const inmateData = {
-        inmateId:       document.getElementById('admin_inmateId').value,
-        registrationNo: document.getElementById('admin_regNo').value,
-        uniqueId:       document.getElementById('admin_uniqueId').value,
-        status:         document.getElementById('admin_status').value,
-        fullName:       document.getElementById('admin_fullName').value,
-        dob:            document.getElementById('admin_dob').value,
-        gender:         document.getElementById('admin_gender').value,
-        languages:      document.getElementById('admin_languages').value,
-        address:        document.getElementById('admin_address').value,
-        joiningDate:    document.getElementById('admin_joiningDate').value
-    };
-    if (!inmateData.inmateId || !inmateData.registrationNo || !inmateData.fullName) {
-        alert("Please fill in the required fields (ID, Registration No, and Name).");
-        return;
-    }
+// function submitAdminInmateReport() {
+//     const photoFiles = document.getElementById('adminPhotoInput').files;
+//     if (photoFiles.length === 0) {
+//         alert("Please upload at least one photo of the inmate for identification.");
+//         return;
+//     }
+//     const inmateData = {
+//         inmateId:       document.getElementById('admin_inmateId').value,
+//         registrationNo: document.getElementById('admin_regNo').value,
+//         uniqueId:       document.getElementById('admin_uniqueId').value,
+//         status:         document.getElementById('admin_status').value,
+//         fullName:       document.getElementById('admin_fullName').value,
+//         dob:            document.getElementById('admin_dob').value,
+//         gender:         document.getElementById('admin_gender').value,
+//         languages:      document.getElementById('admin_languages').value,
+//         address:        document.getElementById('admin_address').value,
+//         joiningDate:    document.getElementById('admin_joiningDate').value
+//     };
+//     if (!inmateData.inmateId || !inmateData.registrationNo || !inmateData.fullName) {
+//         alert("Please fill in the required fields (ID, Registration No, and Name).");
+//         return;
+//     }
 
-    // Add to the admin table data so it appears immediately
-    var dob = inmateData.dob || '';
-    var age = '—';
-    if (dob) {
-        var birth = new Date(dob);
-        age = Math.floor((new Date() - birth) / (365.25 * 24 * 60 * 60 * 1000));
-    }
-    adminReports.push({
-        id:     adminReports.length + 1,
-        name:   inmateData.fullName,
-        age:    age,
-        gender: inmateData.gender || 'Unknown',
-        loc:    inmateData.address || '—',
-        date:   new Date().toISOString().slice(0, 10),
-        status: 'Missing',
-        photo:  null
-    });
+//     // Add to the admin table data so it appears immediately
+//     var dob = inmateData.dob || '';
+//     var age = '—';
+//     if (dob) {
+//         var birth = new Date(dob);
+//         age = Math.floor((new Date() - birth) / (365.25 * 24 * 60 * 60 * 1000));
+//     }
+//     adminReports.push({
+//         id:     adminReports.length + 1,
+//         name:   inmateData.fullName,
+//         age:    age,
+//         gender: inmateData.gender || 'Unknown',
+//         loc:    inmateData.address || '—',
+//         date:   new Date().toISOString().slice(0, 10),
+//         status: 'Missing',
+//         photo:  null
+//     });
 
-    console.log("Admin Inmate Registration Data:", inmateData);
-    alert("Inmate Registered Successfully!");
-    showDashboard();
-}
+//     console.log("Admin Inmate Registration Data:", inmateData);
+//     alert("Inmate Registered Successfully!");
+//     showDashboard();
+// }
 
 // function submitPublicLostReport() {
 //     const photoFiles = document.getElementById('publicPhotoInput').files;
