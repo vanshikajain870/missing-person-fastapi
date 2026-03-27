@@ -398,7 +398,7 @@ collection   = db["inmates"]
 # ===========================
 # Upload Folder Setup
 # ===========================
-UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads", "photos")
+UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads/photos")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 STATIC_DIR = os.path.join(os.getcwd(), "static")
@@ -439,7 +439,7 @@ def health():
 #  Frontend JS calls:  POST /submit
 # ══════════════════════════════════════════════════════
 @app.post("/submit")
-async def submit_lost_report(
+async def submit(
     public_fullName:      str            = Form(...),
     public_age:           str            = Form(...),
     gender:               str            = Form(...),
