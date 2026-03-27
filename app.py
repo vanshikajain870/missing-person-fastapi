@@ -46,6 +46,7 @@ db = client["missing_person_db"]
 # 2. Admin inmate registrations  →  inmates
 missing_collection = db["user_login_details"]
 collection   = db["inmates"]
+found_collection   = db["found_persons"]
 
 # ===========================
 # Upload Folder Setup
@@ -227,6 +228,61 @@ async def register_inmate(
         raise HTTPException(status_code=500, detail="Database error. Could not save inmate record.")
 
     return {"message": "Inmate registered successfully"}
+
+
+
+# ══════════════════════════════════════════════════════
+#  ADMIN — Report Found Person / Family
+#  Frontend: POST /found-person   (connect2.js)
+#  ← NEW — merged from separate app
+# ══════════════════════════════════════════════════════
+ 
+# Pydantic model — connect2.js sends JSON (not FormData)
+# so we use BaseModel here, NOT Form(...)
+class FoundPersonRequest(BaseModel):
+    found_location: str
+    found_datetime: str
+    contact_name:   str
+    contact_number: str
+ 
+@app.post("/found-person")
+def found_person(data: FoundPersonRequest):
+ 
+    # Phone validation
+    phone_number = data.contact_number.strip()
+    if not re.match(r'^[6-9]\d{9}$', phone_number):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid Indian phone number (must be 10 digits, start with 6-9)"
+        )
+ 
+    # Date validation
+    if not data.found_datetime:
+        raise HTTPException(status_code=400, detail="Found date & time is required.")
+    try:
+        selected_date = datetime.fromisoformat(data.found_datetime)
+        if selected_date > datetime.now():
+            raise HTTPException(status_code=400, detail="Future date is not allowed.")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format.")
+ 
+    # Save to MongoDB
+    found_document = {
+        "found_location": data.found_location,
+        "found_datetime": data.found_datetime,
+        "contact_name":   data.contact_name,
+        "contact_number": phone_number,
+        "created_at":     datetime.now().isoformat()
+    }
+ 
+    try:
+        result = found_collection.insert_one(found_document)
+        print("✅ Found person inserted:", result.inserted_id)
+    except Exception as e:
+        print("❌ MongoDB insert failed:", e)
+        raise HTTPException(status_code=500, detail="Database error. Could not save found report.")
+ 
+    return {"message": "Found person stored successfully"}
 
 
 # ══════════════════════════════════════════════════════
