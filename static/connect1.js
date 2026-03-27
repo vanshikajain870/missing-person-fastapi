@@ -175,74 +175,205 @@
 // connect2.js  —  sends FormData (matches Form(...) in backend)
 // ================================
 
-const BASE_URL = window.location.origin;
+// const BASE_URL = window.location.origin;
+
+// function submitFoundReport() {
+
+//     console.log("Found report button clicked");
+
+//     const foundLocation = document.getElementById("foundLocation").value.trim();
+//     const foundDatetime = document.getElementById("foundDatetime").value;
+//     const contactName   = document.getElementById("contact_name").value.trim();
+//     const contactNumber = document.getElementById("contact_phone").value.trim();
+
+//     // Required fields
+//     if (!foundLocation || !foundDatetime || !contactName || !contactNumber) {
+//         alert("Please fill all required fields");
+//         return;
+//     }
+
+//     // Phone validation
+//     const indianPhoneRegex = /^[6-9]\d{9}$/;
+//     if (!indianPhoneRegex.test(contactNumber)) {
+//         alert("Please enter a valid 10-digit Indian mobile number (starts with 6-9)");
+//         return;
+//     }
+
+//     // Date validation
+//     const selectedDate = new Date(foundDatetime);
+//     const currentDate  = new Date();
+//     if (selectedDate > currentDate) {
+//         alert("Future date is not allowed. Please select a past date & time.");
+//         return;
+//     }
+
+//     // Build FormData — matches Form(...) parameters in backend
+//     const formData = new FormData();
+//     formData.append("found_location", foundLocation);
+//     formData.append("found_datetime", foundDatetime);
+//     formData.append("contact_name",   contactName);
+//     formData.append("contact_number", contactNumber);
+
+//     // POST to /found-person
+//     fetch(`${BASE_URL}/found-person`, {
+//         method: "POST",
+//         body: formData
+//         // Do NOT set Content-Type manually — browser sets it with boundary for FormData
+//     })
+//     .then(res => res.json())
+//     .then(data => {
+//         console.log("Server response:", data);
+//         if (data.detail) {
+//             alert("Error: " + data.detail);
+//             return;
+//         }
+//         alert(data.message);   // "Found person stored successfully"
+//         showDashboard();
+//     })
+//     .catch(err => {
+//         console.error("Fetch error:", err);
+//         alert("Error submitting report. Please check your connection.");
+//     });
+// }
+
+// // ================================
+// // Prevent future dates in the form
+// // ================================
+// window.addEventListener("DOMContentLoaded", function () {
+//     const dtInput = document.getElementById("foundDatetime");
+//     if (dtInput) {
+//         const now = new Date();
+//         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+//         dtInput.max = now.toISOString().slice(0, 16);
+//     }
+// });
+
+// ================================
+// Found Report — Frontend Submit
+// connect2.js
+// ================================
 
 function submitFoundReport() {
 
-    console.log("Found report button clicked");
+    console.log("✅ submitFoundReport() called");
 
-    const foundLocation = document.getElementById("foundLocation").value.trim();
-    const foundDatetime = document.getElementById("foundDatetime").value;
-    const contactName   = document.getElementById("contact_name").value.trim();
-    const contactNumber = document.getElementById("contact_phone").value.trim();
+    const FOUND_API = "https://missing-person-fastapi.onrender.com";
 
-    // Required fields
-    if (!foundLocation || !foundDatetime || !contactName || !contactNumber) {
-        alert("Please fill all required fields");
+    const foundLocationEl = document.getElementById("foundLocation");
+    const foundDatetimeEl = document.getElementById("foundDatetime");
+    const contactNameEl   = document.getElementById("contact_name");
+    const contactPhoneEl  = document.getElementById("contact_phone");
+
+    if (!foundLocationEl || !foundDatetimeEl || !contactNameEl || !contactPhoneEl) {
+        alert("Form error: fields not found. Please refresh.");
         return;
     }
 
-    // Phone validation
+    const foundLocation = foundLocationEl.value.trim();
+    const foundDatetime = foundDatetimeEl.value.trim();
+    const contactName   = contactNameEl.value.trim();
+    const contactNumber = contactPhoneEl.value.trim();
+
+    console.log("foundLocation:", foundLocation);
+    console.log("foundDatetime:", foundDatetime);
+    console.log("contactName:",   contactName);
+    console.log("contactNumber:", contactNumber);
+
+    // ── Validate each field separately ───────────────
+    if (!foundLocation) {
+        alert("Please enter the Family Location.");
+        foundLocationEl.focus();
+        return;
+    }
+    if (!foundDatetime) {
+        alert("Please select the Found Date & Time.");
+        foundDatetimeEl.focus();
+        return;
+    }
+    if (!contactName) {
+        alert("Please enter the Family Member's Name.");
+        contactNameEl.focus();
+        return;
+    }
+    if (!contactNumber) {
+        alert("Please enter the Phone Number.");
+        contactPhoneEl.focus();
+        return;
+    }
+
+    // ── Phone validation ──────────────────────────────
     const indianPhoneRegex = /^[6-9]\d{9}$/;
     if (!indianPhoneRegex.test(contactNumber)) {
-        alert("Please enter a valid 10-digit Indian mobile number (starts with 6-9)");
+        alert("Please enter a valid 10-digit Indian mobile number (starts with 6-9).");
+        contactPhoneEl.focus();
         return;
     }
 
-    // Date validation
+    // ── Date validation ───────────────────────────────
     const selectedDate = new Date(foundDatetime);
     const currentDate  = new Date();
     if (selectedDate > currentDate) {
         alert("Future date is not allowed. Please select a past date & time.");
+        foundDatetimeEl.focus();
         return;
     }
 
-    // Build FormData — matches Form(...) parameters in backend
+    // ── Build FormData ────────────────────────────────
     const formData = new FormData();
     formData.append("found_location", foundLocation);
     formData.append("found_datetime", foundDatetime);
     formData.append("contact_name",   contactName);
     formData.append("contact_number", contactNumber);
 
-    // POST to /found-person
-    fetch(`${BASE_URL}/found-person`, {
+    // ── Disable button while submitting ──────────────
+    const submitBtn = document.querySelector("#foundReportPage .submit-report-btn");
+    if (submitBtn) {
+        submitBtn.disabled    = true;
+        submitBtn.textContent = "Submitting...";
+    }
+
+    // ── POST request ──────────────────────────────────
+    fetch(FOUND_API + "/found-person", {
         method: "POST",
-        body: formData
-        // Do NOT set Content-Type manually — browser sets it with boundary for FormData
+        body:   formData
     })
-    .then(res => res.json())
-    .then(data => {
+    .then(function(res) {
+        console.log("HTTP status:", res.status);
+        return res.json();
+    })
+    .then(function(data) {
         console.log("Server response:", data);
+
+        if (submitBtn) {
+            submitBtn.disabled    = false;
+            submitBtn.textContent = "Submit Found Family Report";
+        }
+
         if (data.detail) {
-            alert("Error: " + data.detail);
+            alert("Error from server: " + data.detail);
             return;
         }
-        alert(data.message);   // "Found person stored successfully"
+
+        alert("✅ " + (data.message || "Found family report submitted successfully!"));
         showDashboard();
     })
-    .catch(err => {
+    .catch(function(err) {
         console.error("Fetch error:", err);
-        alert("Error submitting report. Please check your connection.");
+
+        if (submitBtn) {
+            submitBtn.disabled    = false;
+            submitBtn.textContent = "Submit Found Family Report";
+        }
+
+        alert("❌ Network error. Please check your connection and try again.\n\nDetails: " + err.message);
     });
 }
 
-// ================================
-// Prevent future dates in the form
-// ================================
-window.addEventListener("DOMContentLoaded", function () {
-    const dtInput = document.getElementById("foundDatetime");
+// ── Prevent future dates ──────────────────────────────
+document.addEventListener("DOMContentLoaded", function () {
+    var dtInput = document.getElementById("foundDatetime");
     if (dtInput) {
-        const now = new Date();
+        var now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         dtInput.max = now.toISOString().slice(0, 16);
     }
