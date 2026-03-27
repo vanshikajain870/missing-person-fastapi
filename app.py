@@ -392,7 +392,7 @@ db = client["missing_person_db"]
 # ── Two separate collections ──────────────────────────
 # 1. Public lost-person reports  →  missing_reports
 # 2. Admin inmate registrations  →  inmates
-collection = db["user_login_details"]
+missing_collection = db["user_login_details"]
 collection   = db["inmates"]
 
 # ===========================
@@ -497,7 +497,7 @@ async def submit_lost_report(
     }
 
     try:
-        result = collection.insert_one(document)
+        result = missing_collection.insert_one(document)
         print("✅ Lost report inserted:", result.inserted_id)
     except Exception as e:
         print("❌ MongoDB insert failed:", e)
@@ -584,7 +584,7 @@ async def register_inmate(
 @app.get("/get-missing-reports")
 def get_missing_reports():
     try:
-        reports = list(collection.find())
+        reports = list(missing_collection.find())
         for r in reports:
             r["_id"]    = str(r["_id"])
             r["status"] = r.get("status", "Missing")
@@ -600,7 +600,7 @@ def get_missing_reports():
 @app.get("/get-reports")
 def get_reports():
     try:
-        reports = list(collection.find())
+        reports = list(missing_collection.find())
         for r in reports:
             r["_id"]    = str(r["_id"])
             r["status"] = r.get("status", "Missing")
@@ -616,7 +616,7 @@ def get_reports():
 @app.post("/mark-found/{report_id}")
 def mark_found(report_id: str):
     try:
-        result = collection.update_one(
+        result = missing_collection.update_one(
             {"_id": ObjectId(report_id)},
             {"$set": {"status": "Found"}}
         )
