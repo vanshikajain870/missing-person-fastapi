@@ -98,18 +98,95 @@
 // Found Report — Frontend Submit
 // ================================
 
-const BASE_URL = "https://missing-person-fastapi.onrender.com"; // ✅ https not http
+// const BASE_URL = "https://missing-person-fastapi.onrender.com"; // ✅ https not http
+
+// function submitFoundReport() {
+
+//     console.log("Button clicked");
+
+//     const foundLocation = document.getElementById("foundLocation").value.trim();
+//     const foundDatetime = document.getElementById("foundDatetime").value;
+//     const contactName   = document.getElementById("contact_name").value.trim();
+//     const contactNumber = document.getElementById("contact_phone").value.trim();
+
+//     // Required fields check
+//     if (!foundLocation || !foundDatetime || !contactName || !contactNumber) {
+//         alert("Please fill all required fields");
+//         return;
+//     }
+
+//     // Phone validation
+//     const indianPhoneRegex = /^[6-9]\d{9}$/;
+//     if (!indianPhoneRegex.test(contactNumber)) {
+//         alert("Please enter a valid 10-digit Indian mobile number (starts with 6-9)");
+//         return;
+//     }
+
+//     // Date validation
+//     const selectedDate = new Date(foundDatetime);
+//     const currentDate  = new Date();
+//     if (selectedDate > currentDate) {
+//         alert("Future date is not allowed. Please select a past date & time.");
+//         return;
+//     }
+
+//     fetch(`${BASE_URL}/found-person`, {
+//         method: "POST",
+//         headers: {
+//             "Content-Type": "application/json"
+//         },
+//         body: JSON.stringify({
+//             found_location: foundLocation,
+//             found_datetime: foundDatetime,
+//             contact_name:   contactName,
+//             contact_number: contactNumber
+//         })
+//     })
+//     .then(res => res.json())
+//     .then(data => {
+//         console.log("Server response:", data);
+//         if (data.detail) {
+//             alert("Error: " + data.detail);
+//             return;
+//         }
+//         alert("Found report submitted successfully!");
+//         showDashboard();
+//     })
+//     .catch(err => {
+//         console.error("Fetch error:", err);
+//         alert("Error submitting report. Please try again.");
+//     });
+// }
+
+// // ================================
+// // Prevent future dates in the form
+// // ================================
+// window.addEventListener("DOMContentLoaded", function () {
+//     const dtInput = document.getElementById("foundDatetime");
+//     if (dtInput) {
+//         const now = new Date();
+//         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+//         dtInput.max = now.toISOString().slice(0, 16);
+//     }
+// });
+
+// ================================
+// Found Report — Frontend Submit
+// connect2.js  —  sends FormData (matches Form(...) in backend)
+// ================================
+
+const BASE_URL = window.location.origin;
 
 function submitFoundReport() {
 
-    console.log("Button clicked");
+    console.log("Found report button clicked");
 
     const foundLocation = document.getElementById("foundLocation").value.trim();
     const foundDatetime = document.getElementById("foundDatetime").value;
     const contactName   = document.getElementById("contact_name").value.trim();
     const contactNumber = document.getElementById("contact_phone").value.trim();
 
-    // Required fields check
+    // Required fields
     if (!foundLocation || !foundDatetime || !contactName || !contactNumber) {
         alert("Please fill all required fields");
         return;
@@ -130,17 +207,18 @@ function submitFoundReport() {
         return;
     }
 
+    // Build FormData — matches Form(...) parameters in backend
+    const formData = new FormData();
+    formData.append("found_location", foundLocation);
+    formData.append("found_datetime", foundDatetime);
+    formData.append("contact_name",   contactName);
+    formData.append("contact_number", contactNumber);
+
+    // POST to /found-person
     fetch(`${BASE_URL}/found-person`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            found_location: foundLocation,
-            found_datetime: foundDatetime,
-            contact_name:   contactName,
-            contact_number: contactNumber
-        })
+        body: formData
+        // Do NOT set Content-Type manually — browser sets it with boundary for FormData
     })
     .then(res => res.json())
     .then(data => {
@@ -149,12 +227,12 @@ function submitFoundReport() {
             alert("Error: " + data.detail);
             return;
         }
-        alert("Found report submitted successfully!");
+        alert(data.message);   // "Found person stored successfully"
         showDashboard();
     })
     .catch(err => {
         console.error("Fetch error:", err);
-        alert("Error submitting report. Please try again.");
+        alert("Error submitting report. Please check your connection.");
     });
 }
 
