@@ -567,22 +567,22 @@ function submitPublicLostReport() {
     showDashboard();
 }
 
-function submitFoundReport() {
-    const foundFamilyData = {
-        location:     document.getElementById('foundLocation').value,
-        dateTime:     document.getElementById('foundDatetime').value,
-        languages:    document.getElementById('found-languages').value,
-        contactName:  document.getElementById('contact_name').value,
-        contactPhone: document.getElementById('contact_phone').value
-    };
-    if (!foundFamilyData.location || !foundFamilyData.contactPhone) {
-        alert("Please provide the family location and a contact phone number.");
-        return;
-    }
-    console.log("Found Family Report Data:", foundFamilyData);
-    alert("Found Family Report submitted successfully!");
-    showDashboard();
-}
+// function submitFoundReport() {
+//     const foundFamilyData = {
+//         location:     document.getElementById('foundLocation').value,
+//         dateTime:     document.getElementById('foundDatetime').value,
+//         languages:    document.getElementById('found-languages').value,
+//         contactName:  document.getElementById('contact_name').value,
+//         contactPhone: document.getElementById('contact_phone').value
+//     };
+//     if (!foundFamilyData.location || !foundFamilyData.contactPhone) {
+//         alert("Please provide the family location and a contact phone number.");
+//         return;
+//     }
+//     console.log("Found Family Report Data:", foundFamilyData);
+//     alert("Found Family Report submitted successfully!");
+//     showDashboard();
+// }
 
 // ══════════════════════════════════════════════════════
 // FILE UPLOAD
